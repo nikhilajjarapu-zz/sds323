@@ -1,0 +1,534 @@
+---
+title: "SDS 323: Exercises 2 Report"
+author:
+  - Nikhil Ajjarapu
+date: "March 12, 2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Question 1: KNN practice
+
+Trim 350: RMSE vs K
+
+```{r trim350_1_hidecode, include=FALSE}
+library(mosaic)
+library(tidyverse)
+library(FNN)
+
+
+sclass = read.csv('./data/sclass.csv')
+
+#define RMSE - from slides
+rmse = function(y, ypred) {
+  sqrt(mean((y-ypred)^2))
+}
+
+# Focus on 2 trim levels: 350 and 65 AMG
+sclass350 = subset(sclass, trim == '350')
+
+#split data: x is mileage, y is price
+#limit should be 75% training, 25% test
+limit_350 = floor((nrow(sclass350)/4)*3)
+
+train_350 = sclass350[1:limit_350, ]
+Xtrain_350 = train_350['mileage']
+ytrain_350 = train_350$price
+test_350 = sclass350[(limit_350 + 1):nrow(sclass350), ]
+Xtest_350 = test_350['mileage']
+ytest_350 = test_350$price
+
+#run k-nearest neighbors on trim 350
+max_k = nrow(Xtrain_350)
+error = matrix(0, max_k - 1, 1)
+k_vals = 2:max_k
+for (k_val in k_vals)
+{
+  pred_model_k = FNN::knn.reg(train = Xtrain_350, test = Xtest_350, y = ytrain_350, k = k_val)
+  ypred_k = pred_model_k$pred
+  rmse_out = rmse(ytest_350,ypred_k)
+  error[k_val - 1] = rmse_out
+}
+```
+
+```{r trim350_1_graph, echo=FALSE, fig.width = 10, fig.height = 9.5}
+#create RMSE vs K plot for trim 350
+plot_mat = data.frame(k_vals, error)
+ggplot(data = plot_mat) + 
+  geom_point(mapping=aes(x = k_vals, y = error)) +
+  xlab("K") +
+  ylab("RMSE") +
+  ggtitle("Determining Optimal K value - Trim 350") + 
+  scale_x_reverse() +
+  geom_hline(yintercept = min(error), linetype="dashed", color = "red") +
+  geom_text(aes(0,min(error),label = paste("optimal k value: ", which.min(error), " error: ", round(min(error), digits = 2)), vjust = -1, hjust = 1.75, color = "red"))
+
+```
+
+We can see the optimal k for this plot is k = 16. The optimal model looks like this:
+
+```{r trim350_2, echo=FALSE, fig.width = 10, fig.height = 9.5}
+
+#create optimal model with red overlay for trim 350
+min_k = which.min(error)
+pred_model_min_k = FNN::knn.reg(train = Xtrain_350, test = Xtest_350, y = ytrain_350, k = min_k)
+plot_base = ggplot(data = test_350) +
+  geom_point(mapping=aes(x = mileage, y = price)) +
+  xlab("Mileage") + 
+  ylab("Price") + 
+  ggtitle(paste("trim 350, k = ", min_k))
+
+plot_base + geom_line(mapping=aes(x = Xtest_350$mileage, y = pred_model_min_k$pred, color="red"))
+
+```
+
+Similarly, here is the RMSE vs K plot for Trim 65 AMG: 
+
+```{r trim65AMG_1_hidecode, include=FALSE}
+sclass65AMG = subset(sclass, trim == '65 AMG')
+#split data: x is mileage, y is price
+#limit should be 75% training, 25% test
+limit_65amg = floor((nrow(sclass65AMG)/4)*3)
+
+train_65amg = sclass65AMG[1:limit_65amg, ]
+Xtrain_65amg = train_65amg['mileage']
+ytrain_65amg = train_65amg$price
+test_65amg = sclass65AMG[(limit_65amg + 1):nrow(sclass65AMG) ,]
+Xtest_65amg = test_65amg['mileage']
+ytest_65amg = test_65amg$price
+
+#run k-nearest neighbors on trim 350
+max_k = nrow(Xtrain_350)
+error = matrix(0, max_k - 1, 1)
+k_vals = 2:max_k
+for (k_val in k_vals)
+{
+  pred_model_k = FNN::knn.reg(train = Xtrain_350, test = Xtest_350, y = ytrain_350, k = k_val)
+  ypred_k = pred_model_k$pred
+  rmse_out = rmse(ytest_350,ypred_k)
+  error[k_val - 1] = rmse_out
+}
+```
+
+```{r trim_65AMG_graph, echo=FALSE, fig.width = 10, fig.height = 9.5}
+#create RMSE vs K plot for trim 350
+plot_mat = data.frame(k_vals, error)
+ggplot(data = plot_mat) + 
+  geom_point(mapping=aes(x = k_vals, y = error)) +
+  xlab("K") +
+  ylab("RMSE") +
+  ggtitle("Determining Optimal K value - Trim 350") + 
+  scale_x_reverse() +
+  geom_hline(yintercept = min(error), linetype="dashed", color = "red") +
+  geom_text(aes(0,min(error),label = paste("optimal k value: ", which.min(error), " error: ", round(min(error), digits = 2)), vjust = -1, hjust = 1.75, color = "red"))
+```
+
+And the optimal model exists at k = 6, which can be seen below: 
+
+```{r trim65AMG_2, echo=FALSE, fig.width = 10, fig.height = 9.5}
+#create optimal model with red overlay for trim 65amg
+min_k = which.min(error)
+pred_model_min_k = FNN::knn.reg(train = Xtrain_65amg, test = Xtest_65amg, y = ytrain_65amg, k = min_k)
+plot_base = ggplot(data = test_65amg) +
+  geom_point(mapping=aes(x = mileage, y = price)) +
+  xlab("Mileage") + 
+  ylab("Price") + 
+  ggtitle(paste("trim 65 AMG, k = ", min_k))
+
+plot_base + geom_line(mapping=aes(x = Xtest_65amg$mileage, y = pred_model_min_k$pred, color="red"))
+```
+
+Trim 350 yields the larger optimal value of k at k = 16, compared to Trim 65 AMG, with k = 6. We believe the answer to why has to do with the bias-variance tradeoff. Using a higher k means we have much lower variance, as we take into account more of the points. But using a higher k means that we take into account points that may be far away from the x value, causing the prediction to shift away from the true value and creating bias. In other words, using a higher k causes underfitting in the model. Similarly, using a smaller k creates the opposite problem: while we know we will achieve closer to the true value because we only use the values of the data points around the x value, we are more prone to creating a model that can't generalize because it is trained too specifically to the training set. In other words, the curve will overfit the data. In this specific case, we believe that Trim 350 has the higher k because it requires a model that is simpler in nature as the data is far more "clumped" together than Trim 65 AMG's data is. Since it is a lot more dense, the bias is inherently going to be a lot lower, as more of the data points are going to be closer to the true value than would be the case in an average model. Thus, we boost the k-value a little bit to adjust for the decreased bias, and in turn, increased variance. 
+
+# Question 2: Saratoga house prices
+
+At Ajjarapu and Ajjarapu, the finest consulting firm in the state of New York, we are extremely pleased to present to you our report governing price-estimation models for houses in Saratoga, NY in order to aid your Tax Department in deciding tax policy for the upcoming 5 years. 
+
+## Linear Modeling 
+
+The first step we took was to create a higher quality linear model that given various attributes about the house, could produce an estimated value on the house. After taking a closer look at the current Tax Department model, we realized it was woefully inadequate and decided to update it to create more accurate predictions. Instead of using only 11 features, we decided to create a linear model that used all the features and data given to us. This was the most accurate linear model we could produce from a combination of terms as we let the linear model itself decide which features were more important than others, instead of letting human biases and irrationality cloud judgement and weed out useful features. As shown below, our linear model vastly outperforms the Tax Department's model:
+
+```{r linearmodelerror_hidecode, include=FALSE}
+
+library(tidyverse)
+library(mosaic)
+library(FNN)
+data(SaratogaHouses)
+
+
+#rmse function
+rmse = function(y, yhat) {
+  sqrt( mean( (y - yhat)^2 ) )
+}
+
+#80% training data, 20% test data
+n = nrow(SaratogaHouses)
+n_train = round(0.8*n)  # round to nearest integer
+n_test = n - n_train
+
+#100 different random splits
+rmse_vals_medvsajjarapu = do(100)*{
+  
+  # re-split into train and test cases with the same sample sizes
+  train_cases = sample.int(n, n_train, replace=FALSE)
+  test_cases = setdiff(1:n, train_cases)
+  saratoga_train = SaratogaHouses[train_cases,]
+  saratoga_test = SaratogaHouses[test_cases,]
+  
+  # Fit to the training data, copy over medium model
+  lm_medium = lm(price ~ lotSize + age + livingArea + pctCollege + bedrooms + 
+                   fireplaces + bathrooms + rooms + heating + fuel + centralAir, data=saratoga_train)
+  
+  lm_ajjarapu = lm(price ~ . , data=saratoga_train)
+  
+  # Predictions out of sample
+  yhat_test1 = predict(lm_medium, saratoga_test)
+  yhat_test2 = predict(lm_ajjarapu, saratoga_test)
+  
+  c(rmse(saratoga_test$price, yhat_test1),
+    rmse(saratoga_test$price, yhat_test2))
+}
+```
+
+```{r linearmodelerror_graph, echo=FALSE}
+#code to compare model against medium model
+means = colMeans(rmse_vals_medvsajjarapu)
+print(paste("Tax Department model's average error over 100 iterations: ", means[1]))
+print(paste("Ajjarapu and Ajjarapu model's average error over 100 iterations: ", means[2]))
+```
+
+## k-Nearest-Neighbors Modeling
+
+We decided to take it a step farther and see if the k-nearest-neighbors model could perform even better than the previously mentioned linear model. However, due to computing constraints, we were unable to test for many different Ks as it was just not feasible on a Macbook. From the values tested, however, we noticed that the linear model was outperforming the kNN model given the same exact set of features, as evidenced below:
+
+```{r knnmodelerror_hidecode, include=FALSE}
+#fit the model for multiple Ks
+k_limit = 20
+k_vals = 2:k_limit
+rmse_vals_knnvsajjarapu = matrix(0, k_limit - 1 ,2)
+
+#80% training data, 20% test data
+n = nrow(SaratogaHouses)
+n_train = round(0.8*n)  # round to nearest integer
+n_test = n - n_train
+
+for (k_val in k_vals) {
+  rmse_vals_iter = do(100)*{
+   
+    # re-split into train and test cases with the same sample sizes
+    train_cases = sample.int(n, n_train, replace=FALSE)
+    test_cases = setdiff(1:n, train_cases)
+    saratoga_train = SaratogaHouses[train_cases,]
+    saratoga_test = SaratogaHouses[test_cases,]
+    
+    #create KNN model - no pairwise interactions
+    Xtrain_temp = model.matrix(price ~ . - 1, data = saratoga_train)
+    Xtest_temp = model.matrix(price ~ . - 1, data = saratoga_test)
+    
+    ytrain = saratoga_train$price
+    ytest = saratoga_test$price
+    
+    #standardize data
+    scale_amount = apply(Xtrain_temp, 2, sd)
+    Xtrain = scale(Xtrain_temp, scale=scale_amount)
+    Xtest = scale(Xtest_temp, scale=scale_amount)
+    
+    #train k model
+    knn_model = knn.reg(Xtrain, Xtest, ytrain, k=k_val)
+    
+    # predictions out of sample
+    c(rmse(ytest, knn_model$pred),
+      means[2])
+  }
+  rmse_vals_avg = colMeans(rmse_vals_iter)
+  rmse_vals_knnvsajjarapu[k_val - 1, 1] = rmse_vals_avg[1]
+  rmse_vals_knnvsajjarapu[k_val - 1, 2] = rmse_vals_avg[2]
+}
+```
+
+```{r knnmodelerror_graph, echo=FALSE }
+#plot RMSE vs K
+error = rmse_vals_knnvsajjarapu[,1]
+plot_mat = data.frame(k_vals, error)
+ggplot(data = plot_mat) + 
+  geom_point(mapping=aes(x = k_vals, y = error)) +
+  xlab("K") +
+  ylab("RMSE") +
+  ggtitle("RMSE vs K") + 
+  scale_x_reverse() +
+  geom_hline(yintercept = min(error), linetype="dashed", color = "red") +
+  geom_text(aes(0,min(error),label = paste("optimal k value: ", which.min(error), " error: ", round(min(error), digits = 2)), vjust = -1, hjust = 1.75, color = "red"))
+```
+
+We believe this is due to the complex nature of the data itself. While simpler data that is more categorical in nature can avail itself of the efficiency of the kNN model, we believe values as sensitive as price of a house cannot be estimated solely from "similar" houses for 2 different reasons. First, "similarity" between items in a dataset (in this case, houses) becomes a lot more vague as the number of features go up. While standardizing the data offsets this effect somewhat by equally weighting the different features, it still is an inherent problem of the model as it is difficult to estimate how "close" together two houses are as the dimensionality of the data increases. Secondly, prices are a lot more sensitive to the effects of different variables, and kNN cannot account for this, while linear modeling.
+
+Thus, we conclude that a linear model is the most effective model for housing data, and we strongly reccomend the Tax Department immediately switch to the Ajjarapu and Ajjarapu model for a small amount of $2,000,000 to create more accurate estimates of house price. 
+
+# Question 3: Predicting when articles go viral
+
+As described in the problem set, there are multiple ways of determining whether an article will go viral given the dataset. We can roughly narrow the problem into two types: regression and classification. Overall, 4 different models were considered for this problem to see which one could produce the best results, and each model was tested with 100 random unique splits to determine a stable average for accuracy purposes. For kNN models, the highest k-value chosen was 20, with 100 random splits per k value, in the interest of computational efficiency as my laptop could not handle larger loads. 
+
+## Regression - Linear Modeling
+
+The first model tested was linear modeling on the regression problem. After trying various different combinations of features, the model was finalized with a linear combination of every single feature, as it seemed to have the best performance and minimized the error the best, which can be explained by the fact that there was no human decision-making into what features should or should not be used. A complete breakdown of the confusion matrix, overall error rate, true positive rate, and false positive rate can be found below:
+
+```{r r_lm_hidecode, include=FALSE}
+library(mosaic)
+library(tidyverse)
+
+#read in data
+online_news = read.csv('./data/online_news.csv')
+
+#80% training data, 20% test data
+n = round(nrow(online_news) / 100) # nearest integer
+n_train = round(0.8*n)  # round to nearest integer
+n_test = n - n_train
+
+#method 1: regression + thresholding
+#model 1: linear model
+
+#100 different random splits
+vals_lm_1 = do(100)*{
+  
+  # re-split into train and test cases with the same sample sizes
+  train_cases = sample.int(n, n_train, replace=FALSE)
+  test_cases = setdiff(1:n, train_cases)
+  on_train = online_news[train_cases,2:ncol(online_news)]
+  on_test = online_news[test_cases,2:ncol(online_news)]
+  
+  lm_ajjarapu = lm(shares ~ ., data=on_train) 
+  
+  # Predictions out of sample + convert to binary
+  yhat_test1 = predict(lm_ajjarapu, on_test)
+  yhat_binary = ifelse(yhat_test1 > 1400, 1, 0)
+  y_binary = ifelse(on_test$shares > 1400, 1, 0)
+  
+  #calculate confusion matrix, error rate, true positive rate, false positive rate 
+  conf_matrix = table(y = y_binary, yhat = yhat_binary)
+  error_rate = (conf_matrix[2] + conf_matrix[3]) / sum(conf_matrix)
+  true_positive_rate = conf_matrix[4] / (conf_matrix[2] + conf_matrix[4]) 
+  false_positive_rate = conf_matrix[3] / (conf_matrix[1] + conf_matrix[3]) 
+  
+  c(conf_matrix, error_rate, true_positive_rate, false_positive_rate)
+}
+vals_lm_avg = colMeans(vals_lm_1)
+```
+
+```{r r_lm_graph, echo=FALSE}
+print("Confusion Matrix: ")
+print("      yhat")
+print("y      0     1")
+print(paste("  0 ", vals_lm_avg[1], "  ", vals_lm_avg[3]))
+print(paste("  1 ", vals_lm_avg[2], "  ", vals_lm_avg[4]))
+print(paste("Overall Error Rate: ", vals_lm_avg[5]))
+print(paste("True Positive Rate: ", vals_lm_avg[6]))
+print(paste("False Positive Rate: ", vals_lm_avg[7]))
+
+null_error_rate = (vals_lm_avg[1] + vals_lm_avg[3]) / sum(vals_lm_avg[1:4])
+print(paste("Error Rate of Null Model: ", null_error_rate))
+```
+
+## Regression - kNN model
+
+Another model considered for the regression model was a kNN model with various values for k. The kNN model took on various k values in order to see which creates the optimal model to compare against the 3 other main models. However, the feature set was slightly different: in order to accomodate the scaling of features, various features had to be removed as they were not compatible with the scaled values. A complete breakdown of the confusion matrix, overall error rate, true positive rate, and false positive rate for this model can be found below: 
+
+```{r r_knn_hidecode, include=FALSE}
+#model 2: knn
+k_limit = 20
+k_vals = 2:k_limit
+vals_knn_1 = matrix(0, k_limit - 1, 7)
+
+#80% training data, 20% test data
+n = round(nrow(online_news) / 100) # nearest integer
+n_train = round(0.8*n)  # round to nearest integer
+n_test = n - n_train
+
+for (k_val in k_vals) {
+  rmse_vals_iter = do(100)*{
+    
+    # re-split into train and test cases with the same sample sizes
+    train_cases = sample.int(n, n_train, replace=FALSE)
+    test_cases = setdiff(1:n, train_cases)
+    on_train = online_news[train_cases,2:ncol(online_news)]
+    on_test = online_news[test_cases,2:ncol(online_news)]
+    
+    #create KNN model - no pairwise interactions, remove features that don't scale properly
+    Xtrain_temp = model.matrix(shares ~ . - (weekday_is_monday + weekday_is_tuesday + weekday_is_wednesday + weekday_is_thursday + weekday_is_friday + weekday_is_saturday + weekday_is_sunday + is_weekend) - 1, data = on_train)
+    Xtest_temp = model.matrix(shares ~ . - (weekday_is_monday + weekday_is_tuesday + weekday_is_wednesday + weekday_is_thursday + weekday_is_friday + weekday_is_saturday + weekday_is_sunday + is_weekend) - 1, data = on_test)
+    
+    ytrain = on_train$shares
+    ytest = on_test$shares
+    
+    #standardize data
+    scale_amount = apply(Xtrain_temp, 2, sd)
+    Xtrain = scale(Xtrain_temp, scale=scale_amount)
+    Xtest = scale(Xtest_temp, scale=scale_amount)
+    
+    #train k model
+    knn_model = knn.reg(Xtrain, Xtest, ytrain, k=k_val)
+    
+    # Predictions out of sample + convert to binary
+    yhat_test1 = knn_model$pred
+    yhat_binary = ifelse(yhat_test1 > 1400, 1, 0)
+    y_binary = ifelse(on_test$shares > 1400, 1, 0)
+    
+    #calculate confusion matrix, error rate, true positive rate, false positive rate 
+    conf_matrix = table(y = y_binary, yhat = yhat_binary)
+    error_rate = (conf_matrix[2] + conf_matrix[3]) / sum(conf_matrix)
+    true_positive_rate = conf_matrix[4] / (conf_matrix[2] + conf_matrix[4]) 
+    false_positive_rate = conf_matrix[3] / (conf_matrix[1] + conf_matrix[3]) 
+    
+    c(conf_matrix, error_rate, true_positive_rate, false_positive_rate)
+  }
+  rmse_vals_avg = colMeans(rmse_vals_iter)
+  vals_knn_1[k_val - 1,] = rmse_vals_avg
+}
+best_model_knn = vals_knn_1[which.min(vals_knn_1[,5]),]
+```
+
+```{r r_knn_graph, echo=FALSE}
+print("Confusion Matrix: ")
+print("      yhat")
+print("y      0     1")
+print(paste("  0 ", best_model_knn[1], "  ", best_model_knn[3]))
+print(paste("  1 ", best_model_knn[2], "  ", best_model_knn[4]))
+print(paste("Overall Error Rate: ", best_model_knn[5]))
+print(paste("True Positive Rate: ", best_model_knn[6]))
+print(paste("False Positive Rate: ", best_model_knn[7]))
+
+null_error_rate = (best_model_knn[1] + best_model_knn[3]) / sum(best_model_knn[1:4])
+print(paste("Error Rate of Null Model: ", null_error_rate))
+```
+
+## Classification - logistic model
+Now we will approach the problem as a issue of classification, and this can be achieved with some preprocessing by creating a column "viral" that has binary values for whether an article went viral or not. All relevant statistics can be found below:
+
+```{r c_log_hidecode, include=FALSE}
+#method 2: classification
+#model 1: logistic model
+vals_lm_2 = do(100)*{
+  # re-split into train and test cases with the same sample sizes
+  train_cases = sample.int(n, n_train, replace=FALSE)
+  test_cases = setdiff(1:n, train_cases)
+  on_train = online_news[train_cases,2:ncol(online_news)]
+  on_test = online_news[test_cases,2:ncol(online_news)]
+  
+  on_train$viral = ifelse(on_train$shares > 1400, 1,
+                          ifelse(on_train$shares <= 1400, 0, NA))
+  on_test$viral = ifelse(on_test$shares > 1400, 1,
+                          ifelse(on_test$shares <= 1400, 0, NA))
+  lm_ajjarapu = glm(viral ~ ., data=on_train, family=binomial, maxit = 100) 
+  
+  # Predictions out of sample + convert to binary
+  yhat_test1_pred = predict(lm_ajjarapu, on_test, type='response')
+  yhat_binary = ifelse(yhat_test1_pred > 0.5, 1, 0)
+  y_binary = on_test$viral
+  
+  #calculate confusion matrix, error rate, true positive rate, false positive rate 
+  conf_matrix = table(y = y_binary, yhat = yhat_binary)
+  error_rate = (conf_matrix[2] + conf_matrix[3]) / sum(conf_matrix)
+  true_positive_rate = conf_matrix[4] / (conf_matrix[2] + conf_matrix[4]) 
+  false_positive_rate = conf_matrix[3] / (conf_matrix[1] + conf_matrix[3]) 
+  
+  c(conf_matrix, error_rate, true_positive_rate, false_positive_rate)
+}
+vals_logm_avg = colMeans(vals_lm_2)
+
+```
+
+```{r c_log_graph, echo=FALSE}
+vals_lm_avg = vals_logm_avg
+print("Confusion Matrix: ")
+print("      yhat")
+print("y      0     1")
+print(paste("  0 ", vals_lm_avg[1], "  ", vals_lm_avg[3]))
+print(paste("  1 ", vals_lm_avg[2], "  ", vals_lm_avg[4]))
+print(paste("Overall Error Rate: ", vals_lm_avg[5]))
+print(paste("True Positive Rate: ", vals_lm_avg[6]))
+print(paste("False Positive Rate: ", vals_lm_avg[7]))
+
+null_error_rate = (vals_lm_avg[1] + vals_lm_avg[3]) / sum(vals_lm_avg[1:4])
+print(paste("Error Rate of Null Model: ", null_error_rate))
+```
+
+## Classification - kNN
+
+As discussed in class, kNN can not only be used for regression, but also classification problems, as every datapoint in the set will have a label assigned which kNN can predict, which gives it similar behavior to a clustering algorithm. Full statistics can be found below:
+
+```{r c_knn_hidecode, include=FALSE}
+#model 2: knn
+k_limit = 20
+k_vals = 2:k_limit
+vals_knn_2 = matrix(0, k_limit - 1, 7)
+
+for (k_val in k_vals) {
+  rmse_vals_iter = do(100)*{
+    
+    # re-split into train and test cases with the same sample sizes
+    train_cases = sample.int(n, n_train, replace=FALSE)
+    test_cases = setdiff(1:n, train_cases)
+    on_train = online_news[train_cases,2:ncol(online_news)]
+    on_test = online_news[test_cases,2:ncol(online_news)]
+    
+    on_train$viral = ifelse(on_train$shares > 1400, 1,
+                            ifelse(on_train$shares <= 1400, 0, NA))
+    on_test$viral = ifelse(on_test$shares > 1400, 1,
+                           ifelse(on_test$shares <= 1400, 0, NA))
+    
+    #create KNN model - no pairwise interactions, remove features that don't scale properly
+    Xtrain_temp = model.matrix(shares ~ . - (weekday_is_monday + weekday_is_tuesday + weekday_is_wednesday + weekday_is_thursday + weekday_is_friday + weekday_is_saturday + weekday_is_sunday + is_weekend) - 1, data = on_train)
+    Xtest_temp = model.matrix(viral ~ . - (weekday_is_monday + weekday_is_tuesday + weekday_is_wednesday + weekday_is_thursday + weekday_is_friday + weekday_is_saturday + weekday_is_sunday + is_weekend) - 1, data = on_test)
+    
+    ytrain = on_train$viral
+    ytest = on_test$viral
+    
+    #standardize data
+    scale_amount = apply(Xtrain_temp, 2, sd)
+    Xtrain = scale(Xtrain_temp, scale=scale_amount)
+    Xtest = scale(Xtest_temp, scale=scale_amount)
+    
+    #train k model
+    knn_model = knn.reg(Xtrain, Xtest, ytrain, k=k_val)
+    
+    # Predictions out of sample + convert to binary
+    yhat_test1_pred = knn_model$pred
+    yhat_binary = ifelse(yhat_test1_pred > 0.5, 1, 0)
+    y_binary = on_test$viral
+    
+    #calculate confusion matrix, error rate, true positive rate, false positive rate 
+    conf_matrix = table(y = y_binary, yhat = yhat_binary)
+    error_rate = (conf_matrix[2] + conf_matrix[3]) / sum(conf_matrix)
+    true_positive_rate = conf_matrix[4] / (conf_matrix[2] + conf_matrix[4]) 
+    false_positive_rate = conf_matrix[3] / (conf_matrix[1] + conf_matrix[3]) 
+    
+    c(conf_matrix, error_rate, true_positive_rate, false_positive_rate)
+  }
+  rmse_vals_avg = colMeans(rmse_vals_iter)
+  vals_knn_2[k_val - 1,] = rmse_vals_avg
+}
+best_model = vals_knn_2[which.min(vals_knn_2[,5]),]
+```
+
+```{r c_knn_graph, echo=FALSE}
+vals_lm_avg = best_model
+print("Confusion Matrix: ")
+print("      yhat")
+print("y      0     1")
+print(paste("  0 ", vals_lm_avg[1], "  ", vals_lm_avg[3]))
+print(paste("  1 ", vals_lm_avg[2], "  ", vals_lm_avg[4]))
+print(paste("Overall Error Rate: ", vals_lm_avg[5]))
+print(paste("True Positive Rate: ", vals_lm_avg[6]))
+print(paste("False Positive Rate: ", vals_lm_avg[7]))
+
+null_error_rate = (vals_lm_avg[1] + vals_lm_avg[3]) / sum(vals_lm_avg[1:4])
+print(paste("Error Rate of Null Model: ", null_error_rate))
+```
+
+## Conclusion
+
+Initally, we can see that every model outperforms the null model, which is ideal as there is no use in engaging in statistical techniques if we can simply predict no article can go viral, which is useful as an initial insight but nothing more than that. We can see the best performing model is the logistic model if we treat the problem as a classification problem. It beats the other 3 models by an incredible amount, having only a ~6% error rate as opposed to the near 50% error rates by the two regression models. This, along with the kNN classification model, shows that thresholding first and classifying clearly outperforms models that regress first and threshold after. Classifying after thresholding is a superior method because it is a lot easier to predict one of two labels as opposed to a specific share amount that each regression algorithm has to do. In addition, there may be various factors that a regression algorithm would prioritize when trying to determine the specific number of shares an article would receive, but those factors may not be needed or relevant when simply determining an article will go viral or not. This would cause the regression algorithm to incorrectly predict "virality" through the proxy of number of shares an article would have. 
+
+
