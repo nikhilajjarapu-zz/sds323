@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Question 1: KNN practice
 
-Trim 350: RMSE vs K
+Here is the RMSE vs K graph for Trim 350:
 
 ```{r trim350_1_hidecode, include=FALSE}
 library(mosaic)
@@ -70,7 +70,7 @@ ggplot(data = plot_mat) +
 
 We can see the optimal k for this plot is k = 16. The optimal model looks like this:
 
-```{r trim350_2, echo=FALSE, fig.width = 10, fig.height = 9.5}
+```{r trim350_2, echo=FALSE, fig.width = 10, fig.height = 13}
 
 #create optimal model with red overlay for trim 350
 min_k = which.min(error)
@@ -126,9 +126,9 @@ ggplot(data = plot_mat) +
   geom_text(aes(0,min(error),label = paste("optimal k value: ", which.min(error), " error: ", round(min(error), digits = 2)), vjust = -1, hjust = 1.75, color = "red"))
 ```
 
-And the optimal model exists at k = 6, which can be seen below: 
+And the optimal model exists at k = 6, which can be seen on the next page: 
 
-```{r trim65AMG_2, echo=FALSE, fig.width = 10, fig.height = 9.5}
+```{r trim65AMG_2, echo=FALSE, fig.width = 10, fig.height = 10.5}
 #create optimal model with red overlay for trim 65amg
 min_k = which.min(error)
 pred_model_min_k = FNN::knn.reg(train = Xtrain_65amg, test = Xtest_65amg, y = ytrain_65amg, k = min_k)
@@ -202,7 +202,7 @@ print(paste("Ajjarapu and Ajjarapu model's average error over 100 iterations: ",
 
 ## k-Nearest-Neighbors Modeling
 
-We decided to take it a step farther and see if the k-nearest-neighbors model could perform even better than the previously mentioned linear model. However, due to computing constraints, we were unable to test for many different Ks as it was just not feasible on a Macbook. From the values tested, however, we noticed that the linear model was outperforming the kNN model given the same exact set of features, as evidenced below:
+We decided to take it a step farther and see if the k-nearest-neighbors model could perform even better than the previously mentioned linear model. However, due to computing constraints, we were unable to test for many different Ks as it was just not feasible on a Macbook. From the values tested, however, we noticed that the linear model was outperforming the kNN model given the same exact set of features, as evidenced on the next page:
 
 ```{r knnmodelerror_hidecode, include=FALSE}
 #fit the model for multiple Ks
